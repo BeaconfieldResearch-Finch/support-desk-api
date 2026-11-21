@@ -27,6 +27,6 @@ Use only injected `now` and `createId`; do not read the system clock, randomness
 
 ### Permitted modifications and extension points
 
-You may edit `starter/supportDesk.mjs`, add helper modules under `starter/`, and add participant-owned tests under `participant-tests/`. Do not modify the README, manifest, acceptance record, or `public-tests/`. Extension is permitted only through `dependencies.now`, `dependencies.createId`, `dependencies.notify`, and helper modules under `starter/`; exported names and schemas must remain stable.
+You may edit `starter/supportDesk.mjs`, add helper modules under `starter/`, and add participant-owned tests under `participant-tests/`. Do not modify the README, license, manifest, or `public-tests/`. Extension is permitted only through `dependencies.now`, `dependencies.createId`, `dependencies.notify`, and helper modules under `starter/`; exported names and schemas must remain stable.
 
 Public tests cover every published gate group. Hidden tests may hide cases and values, but must not introduce undocumented behavior or interfaces.

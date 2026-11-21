@@ -34,7 +34,7 @@
     "state_machines": [{ "entity": "ticket", "initial": "open", "transitions": [{ "from": "open", "to": "in_progress", "when": "authorized request" }, { "from": "open", "to": "closed", "when": "authorized request" }, { "from": "in_progress", "to": "open", "when": "authorized request" }, { "from": "in_progress", "to": "resolved", "when": "authorized request" }, { "from": "resolved", "to": "in_progress", "when": "authorized request" }, { "from": "resolved", "to": "closed", "when": "authorized request" }, { "from": "any", "to": "same", "when": "idempotent no-op without notification" }], "terminal": ["closed"] }],
     "determinism": { "clock": "dependencies.now only", "ids": "dependencies.createId('ticket-status', `${ticket.id}:${ticket.version}:${nextStatus}`)", "randomness": "forbidden" },
     "side_effects": { "allowed": ["one dependencies.notify call after validation and authorization"], "forbidden": ["network", "database", "filesystem", "environment", "global mutation"] },
-    "permitted_modifications": { "editable": ["starter/supportDesk.mjs", "starter/** helper modules", "participant-tests/**"], "immutable": ["README.md", "LICENSE", "ACCEPTANCE.md", "public-manifest.json", "public-tests/**"] },
+    "permitted_modifications": { "editable": ["starter/supportDesk.mjs", "starter/** helper modules", "participant-tests/**"], "immutable": ["README.md", "LICENSE", "public-manifest.json", "public-tests/**"] },
     "extension_points": ["dependencies.now", "dependencies.createId", "dependencies.notify", "starter helper modules"],
     "hidden_test_compatibility": "Hidden tests may vary cases and values within this contract but must not introduce undocumented behavior or interfaces."
   },
