@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "slug": "support-desk-api",
+  "title": "Rescue the Support Desk API",
+  "version": 1,
+  "publication_status": "draft_pending_external_validation",
+  "track": "software_engineering",
+  "difficulty": "easy",
+  "format": "codebase_mission",
+  "ecosystem": "javascript-node",
+  "methodology_version": "1.0.0",
+  "public_gate_groups": [
+    { "key": "request_contracts", "label": "Request and error contracts", "points": 25, "hard_fail": false },
+    { "key": "authorization", "label": "Object authorization", "points": 30, "hard_fail": true },
+    { "key": "state_transitions", "label": "Ticket state transitions", "points": 25, "hard_fail": false },
+    { "key": "idempotent_notifications", "label": "Retry-safe notifications", "points": 20, "hard_fail": false }
+  ],
+  "participant_contract": {
+    "contract_version": 1,
+    "schemas": {
+      "Ticket": { "type": "object", "description": "Exact ticket shape; no extra keys", "required": ["id", "ownerId", "status", "version", "updatedAt", "updatedBy"], "fields": { "id": "non-empty string", "ownerId": "non-empty string", "status": "open|in_progress|resolved|closed", "version": "integer >= 0", "updatedAt": "ISO-8601 UTC string|null", "updatedBy": "non-empty string|null" } },
+      "Actor": { "type": "object", "description": "Exact actor shape; no extra keys", "required": ["id", "role"], "fields": { "id": "non-empty string", "role": "agent|admin" } },
+      "Status": { "type": "string", "description": "open|in_progress|resolved|closed" },
+      "Dependencies": { "type": "object", "description": "Exact injected dependencies", "required": ["now", "createId", "notify"], "fields": { "now": "() -> ISO-8601 UTC string", "createId": "(namespace,seed) -> non-empty string", "notify": "(Notification) -> void" } },
+      "TransitionResult": { "type": "object", "description": "Exact result shape", "required": ["ticket", "notification"], "fields": { "ticket": "Ticket", "notification": "Notification|null" } }
+    },
+    "callable_interfaces": [{
+      "name": "transitionTicket",
+      "signature": "transitionTicket(ticket, actor, nextStatus, dependencies) -> TransitionResult",
+      "inputs": [{ "name": "ticket", "schema": "Ticket" }, { "name": "actor", "schema": "Actor" }, { "name": "nextStatus", "schema": "Status" }, { "name": "dependencies", "schema": "Dependencies" }],
+      "output": { "schema": "TransitionResult" },
+      "errors": [{ "code": "INVALID_INPUT", "when": "any input violates its exact schema" }, { "code": "FORBIDDEN", "when": "an agent does not own the ticket" }, { "code": "ILLEGAL_TRANSITION", "when": "the requested non-identical transition is absent from the state machine" }, { "code": "NOTIFICATION_FAILED", "when": "notify throws; no result is returned" }]
+    }],
+    "state_machines": [{ "entity": "ticket", "initial": "open", "transitions": [{ "from": "open", "to": "in_progress", "when": "authorized request" }, { "from": "open", "to": "closed", "when": "authorized request" }, { "from": "in_progress", "to": "open", "when": "authorized request" }, { "from": "in_progress", "to": "resolved", "when": "authorized request" }, { "from": "resolved", "to": "in_progress", "when": "authorized request" }, { "from": "resolved", "to": "closed", "when": "authorized request" }, { "from": "any", "to": "same", "when": "idempotent no-op without notification" }], "terminal": ["closed"] }],
+    "determinism": { "clock": "dependencies.now only", "ids": "dependencies.createId('ticket-status', `${ticket.id}:${ticket.version}:${nextStatus}`)", "randomness": "forbidden" },
+    "side_effects": { "allowed": ["one dependencies.notify call after validation and authorization"], "forbidden": ["network", "database", "filesystem", "environment", "global mutation"] },
+    "permitted_modifications": { "editable": ["starter/supportDesk.mjs", "starter/** helper modules", "participant-tests/**"], "immutable": ["README.md", "LICENSE", "ACCEPTANCE.md", "public-manifest.json", "public-tests/**"] },
+    "extension_points": ["dependencies.now", "dependencies.createId", "dependencies.notify", "starter helper modules"],
+    "hidden_test_compatibility": "Hidden tests may vary cases and values within this contract but must not introduce undocumented behavior or interfaces."
+  },
+  "rubric_mapping": { "design_reasoning": ["state_transitions"], "architecture_maintainability": ["request_contracts"], "security_by_design": ["authorization"], "testing_evidence": ["idempotent_notifications"], "documentation_operations": ["request_contracts"], "repository_hygiene": ["request_contracts"] },
+  "calibration_claims": ["all_correctness_gates_pass", "no_high_severity_security_gate_fails"],
+  "hidden_evaluation_areas": ["malformed requests", "cross-user access", "duplicate retries", "illegal transitions", "stable error shapes"],
+  "adaptive": { "required": false, "public_scope": null },
+  "resource_limits": { "cpu_vcpu": 1, "memory_mb": 2048, "disk_mb": 2048, "processes": 64, "files": 5000, "output_bytes": 1000000, "timeout_seconds": 600, "network": "none" }
+}
